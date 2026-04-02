@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>万象取存 OmniFetch</title>
+  <script src="jszip.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 400px;
+      min-height: 500px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      color: #333;
+      background: #f5f5f5;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .header p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    
+    #status-msg {
+      padding: 10px 15px;
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 13px;
+      color: #666;
+    }
+    
+    #filter-tabs {
+      display: flex;
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .filter-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      font-size: 12px;
+    }
+    
+    .filter-tab:hover {
+      background: #f0f0f0;
+    }
+    
+    .filter-tab.active {
+      border-bottom-color: #667eea;
+      color: #667eea;
+      font-weight: 600;
+    }
+    
+    #resource-list {
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 10px;
+      background: white;
+      margin: 10px 0;
+    }
+    
+    .resource-card {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .resource-card:hover {
+      border-color: #667eea;
+      background: #f8f9ff;
+    }
+    
+    .resource-card.selected {
+      border-color: #667eea;
+      background: #f0f2ff;
+    }
+    
+    .checkbox {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+      font-size: 16px;
+      user-select: none;
+    }
+    
+    .resource-card img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-right: 10px;
+      background: #f0f0f0;
+    }
+    
+    .resource-info {
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    .resource-info div {
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-bottom: 4px;
+    }
+    
+    .format-tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    
+    .format-image {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    
+    .format-video {
+      background: #fce4ec;
+      color: #c2185b;
+    }
+    
+    .format-svg {
+      background: #e8f5e9;
+      color: #388e3c;
+    }
+    
+    #batch-panel {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      background: white;
+      border-top: 1px solid #e0e0e0;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      flex: 1;
+      min-width: 70px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      flex-basis: 100%;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .disclaimer {
+      margin: 10px;
+      padding: 10px;
+      background: #fff3cd;
+      border-left: 3px solid #ffc107;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #856404;
+      line-height: 1.5;
+    }
+    
+    .disclaimer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+    
+    .disclaimer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🌟 万象取存 OmniFetch</h1>
+    <p>智能资源嗅探与下载工具</p>
+  </div>
+  
+  <div id="status-msg">准备扫描...</div>
+  
+  <div id="filter-tabs" style="display: none;">
+    <div class="filter-tab active" data-filter="all">全部 (<span id="count-all">0</span>)</div>
+    <div class="filter-tab" data-filter="image">图片 (<span id="count-image">0</span>)</div>
+    <div class="filter-tab" data-filter="video">视频 (<span id="count-video">0</span>)</div>
+    <div class="filter-tab" data-filter="svg">SVG (<span id="count-svg">0</span>)</div>
+  </div>
+  
+  <div id="resource-list">
+    <!-- 资源列表将在此处动态生成 -->
+  </div>
+  
+  <div id="batch-panel" style="display: none;">
+    <button class="btn btn-secondary" id="btn-select-all">全选</button>
+    <button class="btn btn-secondary" id="btn-invert">反选</button>
+    <button class="btn btn-secondary" id="btn-clear">清空</button>
+    <button class="btn btn-primary" id="btn-batch-download">批量下载 (ZIP)</button>
+  </div>
+  
+  <div class="disclaimer">
+    <strong>⚠️ 免责声明：</strong><br>
+    本工具仅供个人学习与研究使用。请勿用于商业用途或下载受版权保护的内容。<br>
+    用户需自行承担使用责任，遵守目标网站的版权政策和使用条款。<br><br>
+    <strong>🔒 隐私承诺：</strong><br>
+    本扩展不收集、存储或传输任何用户数据。所有操作均在本地浏览器中完成。<br>
+    <a href="https://kevin-wenkai.github.io/material-downloader-privacy/" target="_blank">查看隐私政策</a>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
