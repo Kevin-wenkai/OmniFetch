@@ -147,9 +147,7 @@ async function startBatchDownload() {
   const status = document.getElementById('status-msg');
   const btn = document.getElementById('btn-batch-download');
   
-  // ⚠️ 版权合规提示
   if (!confirm('⚠️ 版权提醒：请确保您有权下载这些资源。\n\n本工具仅供个人学习与研究使用，请勿用于商业用途或侵犯他人版权。\n\n是否继续下载？')) {
-    btn.disabled = false;
     return;
   }
   
@@ -163,33 +161,58 @@ async function startBatchDownload() {
     }
     
     const zip = new JSZip();
+    let zipHasFiles = false; // 记录压缩包里是否有文件
+    
     for (let i = 0; i < selected.length; i++) {
-      status.textContent = `正在获取资源 (${i + 1}/${selected.length})...`;
-      try {
-        const res = await fetch(selected[i].url);
-        const blob = await res.blob();
-        const safeName = selected[i].name.replace(/[^a-z0-9.]/gi, '_').substring(0, 50);
-        zip.file(safeName, blob);
-      } catch (err) {
-        console.warn(`跳过失败资源 ${selected[i].url}:`, err);
+      status.textContent = `正在处理资源 (${i + 1}/${selected.length})...`;
+      const resObj = selected[i];
+      
+      // 优化1：安全的命名规则，过滤掉系统不允许的特殊字符
+      let safeName = resObj.name.replace(/[\\/:*?"<>|]/g, '_').substring(0, 50);
+      if (!safeName || safeName.trim() === '') {
+        safeName = `unnamed_resource.${resObj.type}`; // 兜底命名
+      }
+      // 优化2：加上序号前缀，绝对防止重名文件互相覆盖
+      const finalName = `${i + 1}_${safeName}`;
+      
+      // 优化3：视频文件（MP4等）直接调用浏览器底层下载，防止内存撑爆
+      if (resObj.type === 'video') {
+        chrome.runtime.sendMessage({
+          action: 'download',
+          url: resObj.url,
+          filename: `OmniFetch_Videos/${finalName}` // 会在浏览器的下载目录建一个文件夹
+        });
+      } else {
+        // 图片和 SVG 走原本的 ZIP 打包流程
+        try {
+          const res = await fetch(resObj.url);
+          const blob = await res.blob();
+          zip.file(finalName, blob);
+          zipHasFiles = true;
+        } catch (err) {
+          console.warn(`跳过失败资源 ${resObj.url}:`, err);
+        }
       }
     }
     
-    status.textContent = '正在打包压缩...';
-    const content = await zip.generateAsync({ type: 'blob' });
-    const now = new Date();
-    const timeStr = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const url = URL.createObjectURL(content);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `OmniFetch_${timeStr}.zip`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // 如果打包了图片/SVG，才生成 ZIP 下载
+    if (zipHasFiles) {
+      status.textContent = '正在打包图片压缩包...';
+      const content = await zip.generateAsync({ type: 'blob' });
+      const now = new Date();
+      const timeStr = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `OmniFetch_Images_${timeStr}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
     
-    status.textContent = '✅ 打包下载完成！';
+    status.textContent = '✅ 处理完成！(视频已直接下载，图片已打包)';
     setTimeout(() => { 
       status.textContent = `已找到 ${allResources.length} 个资源`; 
-    }, 3000);
+    }, 4000);
   } catch (e) {
     console.error('下载失败:', e);
     alert('下载失败：' + e.message);
