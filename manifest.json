@@ -3,32 +3,6 @@
   "name": "万象取存 OmniFetch",
   "version": "3.0",
   "description": "一键嗅探并下载网页图片与视频素材（支持自动检测）。本工具仅供个人学习与研究使用。",
-  "permissions": ["activeTab", "downloads", "scripting"],
-  "host_permissions": ["<all_urls>"],
-  "action": {
-    "default_popup": "popup.html",
-    "default_title": "万象取存 OmniFetch"
-  },
-  "background": {"service_worker": "background.js"},
-  "content_scripts": [{
-    "matches": ["<all_urls>"],
-    "js": ["content-script.js"],
-    "run_at": "document_end"
-  }],
-  "__comment_permissions": "权限说明：activeTab 仅在用户点击时临时访问当前页；downloads 调用浏览器原生下载 API;scripting 注入脚本检测资源。所有操作均在本地完成，不收集用户数据。",
- "icons": {
-  "16": "万象取存 OmniFetch.png",
-  "32": "万象取存 OmniFetch.png",
-  "48": "万象取存 OmniFetch.png",
-  "128": "万象取存 OmniFetch.png"
-},
- "privacy_policy_url": "https://kevin-wenkai.github.io/material-downloader-privacy/"
-}
-{
-  "manifest_version": 3,
-  "name": "万象取存 OmniFetch",
-  "version": "3.0",
-  "description": "一键嗅探并下载网页图片与视频素材（支持自动检测）。本工具仅供个人学习与研究使用。",
   
   "browser_specific_settings": {
     "gecko": {
@@ -75,52 +49,3 @@
   
   "privacy_policy_url": "https://kevin-wenkai.github.io/material-downloader-privacy/"
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
