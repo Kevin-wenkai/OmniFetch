@@ -72,14 +72,18 @@ function initFilterTabs() {
 
 function renderResources() {
   const container = document.getElementById('resource-list');
-  container.innerHTML = '';
+  container.innerHTML = ''; // 清空内容是安全的
   
   const filtered = currentFilter === 'all' 
     ? allResources 
     : allResources.filter(r => r.type === currentFilter);
   
   if (filtered.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">暂无资源</div>';
+    // 修复 innerHTML 警告：使用安全的 DOM 创建方式
+    const emptyDiv = document.createElement('div');
+    emptyDiv.style.cssText = 'text-align:center;color:#999;padding:20px;';
+    emptyDiv.textContent = '暂无资源';
+    container.appendChild(emptyDiv);
     return;
   }
   
@@ -105,10 +109,17 @@ function renderResources() {
     
     const info = document.createElement('div');
     info.className = 'resource-info';
-    info.innerHTML = `
-      <div>${res.name}</div>
-      <span class="format-tag format-${res.type}">${res.type.toUpperCase()}</span>
-    `;
+    
+    // 修复 innerHTML 警告：使用 textContent 替代模板字符串插入
+    const nameDiv = document.createElement('div');
+    nameDiv.textContent = res.name;
+    
+    const tagSpan = document.createElement('span');
+    tagSpan.className = `format-tag format-${res.type}`;
+    tagSpan.textContent = res.type.toUpperCase();
+    
+    info.appendChild(nameDiv);
+    info.appendChild(tagSpan);
     
     card.appendChild(checkbox);
     card.appendChild(img);
